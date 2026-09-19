@@ -324,3 +324,46 @@ fi
 [[ -z "$l2_cache" ]] && l2_cache="N/A"
 [[ -z "$l3_cache" ]] && l3_cache="N/A"
 
+# ============================================================
+# CPU TEMPERATURE
+# ============================================================
+
+cpu_temperature="N/A"
+
+for hwmon in /sys/class/hwmon/hwmon*; do
+
+    [[ -d "$hwmon" ]] || continue
+
+    name=$(get_file "$hwmon/name")
+
+    for temp_input in "$hwmon"/temp*_input; do
+
+        [[ -r "$temp_input" ]] || continue
+
+        label_file="${temp_input%_input}_label"
+
+        if [[ -r "$label_file" ]]; then
+            label=$(<"$label_file")
+        else
+            label=""
+        fi
+
+        if [[ "$name" =~ [Cc][Pp][Uu] ]] ||
+           [[ "$label" =~ [Cc][Pp][Uu] ]] ||
+           [[ "$label" =~ Package ]] ||
+           [[ "$label" =~ Core ]]; then
+
+            temp=$(<"$temp_input")
+
+            cpu_temperature=$(awk \
+                -v temp="$temp" '
+                BEGIN {
+                    printf "%.1f °C", temp / 1000
+                }
+            ')
+
+            break 2
+        fi
+    done
+done
+
