@@ -367,3 +367,67 @@ for hwmon in /sys/class/hwmon/hwmon*; do
     done
 done
 
+# ============================================================
+# MEMORY
+# ============================================================
+
+mem_total=$(awk '
+    /^MemTotal:/ {
+        print $2 * 1024
+    }
+' /proc/meminfo)
+
+mem_free=$(awk '
+    /^MemFree:/ {
+        print $2 * 1024
+    }
+' /proc/meminfo)
+
+mem_available=$(awk '
+    /^MemAvailable:/ {
+        print $2 * 1024
+    }
+' /proc/meminfo)
+
+mem_used=$((mem_total - mem_available))
+
+mem_usage=$(awk \
+    -v used="$mem_used" \
+    -v total="$mem_total" '
+    BEGIN {
+        printf "%.1f%%", (used / total) * 100
+    }
+')
+
+# ============================================================
+# SWAP
+# ============================================================
+
+swap_total=$(awk '
+    /^SwapTotal:/ {
+        print $2 * 1024
+    }
+' /proc/meminfo)
+
+swap_free=$(awk '
+    /^SwapFree:/ {
+        print $2 * 1024
+    }
+' /proc/meminfo)
+
+swap_used=$((swap_total - swap_free))
+
+if (( swap_total > 0 )); then
+
+    swap_usage=$(awk \
+        -v used="$swap_used" \
+        -v total="$swap_total" '
+        BEGIN {
+            printf "%.1f%%", (used / total) * 100
+        }
+    ')
+
+else
+    swap_usage="0.0%"
+fi
+
