@@ -253,7 +253,7 @@ if [[ "$base_frequency" == "N/A" ]]; then
         sed 's/@ //')
 
     if [[ -n "$model_base" ]]; then
-        base_frequency="$model_base"
+        base_frequency=$(printf '%s\n' "$model_base" | sed 's/GHz$/ GHz/')
     fi
 fi
 
@@ -538,7 +538,7 @@ else
         printf "%-20s : %s\n", "Part Number", part_number
         printf "%-20s : %s\n", "Type", type
         printf "%-20s : %s\n", "Capacity", size
-        printf "%-20s : %s\n", "Speed", speed
+        printf "%-20s : %s\n", "Rated Speed", speed
 
         if (configured_speed != "" &&
             configured_speed != "Unknown") {
