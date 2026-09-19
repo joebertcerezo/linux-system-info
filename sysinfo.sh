@@ -288,3 +288,39 @@ else
     cpu_usage="N/A"
 fi
 
+# ============================================================
+# CPU CACHE
+# ============================================================
+
+l1_cache="N/A"
+l2_cache="N/A"
+l3_cache="N/A"
+
+if command -v lscpu >/dev/null 2>&1; then
+
+    l1_cache=$(lscpu | awk -F': *' '
+        /^L1d cache:/ {
+            print $2
+            exit
+        }
+    ')
+
+    l2_cache=$(lscpu | awk -F': *' '
+        /^L2 cache:/ {
+            print $2
+            exit
+        }
+    ')
+
+    l3_cache=$(lscpu | awk -F': *' '
+        /^L3 cache:/ {
+            print $2
+            exit
+        }
+    ')
+fi
+
+[[ -z "$l1_cache" ]] && l1_cache="N/A"
+[[ -z "$l2_cache" ]] && l2_cache="N/A"
+[[ -z "$l3_cache" ]] && l3_cache="N/A"
+
