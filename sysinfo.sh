@@ -53,3 +53,35 @@ format_khz() {
     '
 }
 
+# ============================================================
+# SYSTEM
+# ============================================================
+
+hostname=$(hostname)
+
+if [[ -r /etc/os-release ]]; then
+    # shellcheck disable=SC1091
+    source /etc/os-release
+    os_name="${PRETTY_NAME:-${NAME:-N/A}}"
+else
+    os_name="N/A"
+fi
+
+kernel=$(uname -r)
+architecture=$(uname -m)
+
+# Uptime
+uptime_seconds=$(awk '{print int($1)}' /proc/uptime)
+
+uptime_days=$((uptime_seconds / 86400))
+uptime_hours=$(((uptime_seconds % 86400) / 3600))
+uptime_minutes=$(((uptime_seconds % 3600) / 60))
+
+if (( uptime_days > 0 )); then
+    uptime_display="${uptime_days} days, ${uptime_hours} hours"
+elif (( uptime_hours > 0 )); then
+    uptime_display="${uptime_hours} hours, ${uptime_minutes} minutes"
+else
+    uptime_display="${uptime_minutes} minutes"
+fi
+
