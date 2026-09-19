@@ -505,75 +505,128 @@ field "Usage"      "$swap_usage"
 
 subsection "Memory Modules"
 
-if command -v dmidecode >/dev/null 2>&1; then
+if ! command -v dmidecode >/dev/null 2>&1; then
 
-    if [[ "$EUID" -eq 0 ]]; then
+    field "Status" "dmidecode not installed"
 
-        dmidecode --type memory 2>/dev/null |
-        awk '
-        /^Memory Device$/ {
-            in_device = 1
-            slot = ""
-            size = ""
-            manufacturer = ""
-            part = ""
-            type = ""
-            speed = ""
-        }
+elif [[ "$EUID" -ne 0 ]]; then
 
-        in_device && /^Locator:/ {
-            slot = $0
-            sub(/^Locator:[[:space:]]*/, "", slot)
-        }
-
-        in_device && /^Size:/ {
-            size = $0
-            sub(/^Size:[[:space:]]*/, "", size)
-        }
-
-        in_device && /^Manufacturer:/ {
-            manufacturer = $0
-            sub(/^Manufacturer:[[:space:]]*/, "", manufacturer)
-        }
-
-        in_device && /^Part Number:/ {
-            part = $0
-            sub(/^Part Number:[[:space:]]*/, "", part)
-        }
-
-        in_device && /^Type:/ {
-            type = $0
-            sub(/^Type:[[:space:]]*/, "", type)
-        }
-
-        in_device && /^Speed:/ {
-            speed = $0
-            sub(/^Speed:[[:space:]]*/, "", speed)
-
-            if (size != "No Module Installed" && size != "") {
-
-                printf "%-20s : %s\n", "Slot", slot
-                printf "%-20s : %s\n", "Manufacturer", manufacturer
-                printf "%-20s : %s\n", "Part Number", part
-                printf "%-20s : %s\n", "Type", type
-                printf "%-20s : %s\n", "Capacity", size
-                printf "%-20s : %s\n", "Speed", speed
-                printf "\n"
-            }
-
-            in_device = 0
-        }
-        '
-
-    else
-
-        field "Status" "Run with sudo for RAM module details"
-
-    fi
+    field "Status" "Run with sudo for RAM module details"
 
 else
 
-    field "Status" "dmidecode not installed"
+    dmidecode --type memory 2>/dev/null |
+    awk '
+    function reset() {
+        slot = ""
+        size = ""
+        manufacturer = ""
+        part_number = ""
+        type = ""
+        speed = ""
+        configured_speed = ""
+        valid = 0
+    }
+
+    function print_device() {
+
+        if (!valid || size == "" || size == "No Module Installed")
+            return
+
+        printf "%-20s : %s\n", "Slot", slot
+        printf "%-20s : %s\n", "Manufacturer", manufacturer
+        printf "%-20s : %s\n", "Part Number", part_number
+        printf "%-20s : %s\n", "Type", type
+        printf "%-20s : %s\n", "Capacity", size
+        printf "%-20s : %s\n", "Speed", speed
+
+        if (configured_speed != "" &&
+            configured_speed != "Unknown") {
+            printf "%-20s : %s\n", \
+                "Configured Speed", configured_speed
+        }
+
+        printf "\n"
+    }
+
+    BEGIN {
+        in_device = 0
+        reset()
+    }
+
+    /^Memory Device$/ {
+
+        if (in_device)
+            print_device()
+
+        reset()
+        in_device = 1
+        next
+    }
+
+    !in_device {
+        next
+    }
+
+    /^[[:space:]]*Size:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+
+        size = value
+
+        if (size != "" && size != "No Module Installed")
+            valid = 1
+
+        next
+    }
+
+    /^[[:space:]]*Locator:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        slot = value
+        next
+    }
+
+    /^[[:space:]]*Manufacturer:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        manufacturer = value
+        next
+    }
+
+    /^[[:space:]]*Part Number:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        part_number = value
+        next
+    }
+
+    /^[[:space:]]*Type:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        type = value
+        next
+    }
+
+    /^[[:space:]]*Speed:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        speed = value
+        next
+    }
+
+    /^[[:space:]]*Configured Memory Speed:/ {
+        value = $0
+        sub(/^[^:]*:[[:space:]]*/, "", value)
+        configured_speed = value
+        next
+    }
+
+    END {
+        if (in_device)
+            print_device()
+    }
+    '
 
 fi
 
