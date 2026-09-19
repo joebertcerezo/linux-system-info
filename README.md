@@ -135,7 +135,7 @@ Part Number          : KF3200C16D4/16
 Type                 : DDR4
 Capacity             : 16 GB
 Speed                : 3200 MT/s
-Configured Speed     : 2666 MT/s
+Configured Speed     : 3200 MT/s
 
 Slot                 : DIMM_B1
 Manufacturer         : Kingston
@@ -143,7 +143,7 @@ Part Number          : KF3200C16D4/16
 Type                 : DDR4
 Capacity             : 16 GB
 Speed                : 3200 MT/s
-Configured Speed     : 2666 MT/s
+Configured Speed     : 3200 MT/s
 
 ========================================
                 MOTHERBOARD
