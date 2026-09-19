@@ -431,3 +431,173 @@ else
     swap_usage="0.0%"
 fi
 
+# ============================================================
+# OUTPUT: SYSTEM
+# ============================================================
+
+printf '========================================\n'
+printf '%27s\n' 'SYSTEM INFO'
+printf '========================================\n'
+
+subsection "HOSTNAME"
+
+field "Hostname"     "$hostname"
+field "OS"           "$os_name"
+field "Kernel"       "$kernel"
+field "Architecture" "$architecture"
+field "Uptime"       "$uptime_display"
+
+# ============================================================
+# OUTPUT: CPU
+# ============================================================
+
+section "CPU"
+
+field "CPU"                "$cpu_model"
+field "Architecture"      "$architecture"
+field "Socket(s)"          "$sockets"
+field "CPU(s)"             "$logical_cpus"
+field "Core(s) per Socket" "$cores_per_socket"
+field "Thread(s) per Core" "$threads_per_core"
+field "Physical Cores"     "$physical_cores"
+field "Logical Cores"      "$logical_cpus"
+
+printf '\n'
+
+field "Base Frequency"    "$base_frequency"
+field "Current Frequency" "$current_frequency"
+field "Min Frequency"     "$min_frequency"
+field "Max Frequency"     "$max_frequency"
+
+printf '\n'
+
+field "CPU Usage"   "$cpu_usage"
+field "Temperature" "$cpu_temperature"
+
+subsection "Cache"
+
+field "L1 Cache" "$l1_cache"
+field "L2 Cache" "$l2_cache"
+field "L3 Cache" "$l3_cache"
+
+# ============================================================
+# OUTPUT: MEMORY
+# ============================================================
+
+section "MEMORY"
+
+field "Total RAM"     "$(format_gib "$mem_total")"
+field "Used RAM"      "$(format_gib "$mem_used")"
+field "Free RAM"      "$(format_gib "$mem_free")"
+field "Available RAM" "$(format_gib "$mem_available")"
+field "Usage"         "$mem_usage"
+
+subsection "Swap"
+
+field "Total Swap" "$(format_gib "$swap_total")"
+field "Used Swap"  "$(format_gib "$swap_used")"
+field "Free Swap"  "$(format_gib "$swap_free")"
+field "Usage"      "$swap_usage"
+
+# ============================================================
+# OUTPUT: MEMORY MODULES
+# ============================================================
+
+subsection "Memory Modules"
+
+if command -v dmidecode >/dev/null 2>&1; then
+
+    if [[ "$EUID" -eq 0 ]]; then
+
+        dmidecode --type memory 2>/dev/null |
+        awk '
+        /^Memory Device$/ {
+            in_device = 1
+            slot = ""
+            size = ""
+            manufacturer = ""
+            part = ""
+            type = ""
+            speed = ""
+        }
+
+        in_device && /^Locator:/ {
+            slot = $0
+            sub(/^Locator:[[:space:]]*/, "", slot)
+        }
+
+        in_device && /^Size:/ {
+            size = $0
+            sub(/^Size:[[:space:]]*/, "", size)
+        }
+
+        in_device && /^Manufacturer:/ {
+            manufacturer = $0
+            sub(/^Manufacturer:[[:space:]]*/, "", manufacturer)
+        }
+
+        in_device && /^Part Number:/ {
+            part = $0
+            sub(/^Part Number:[[:space:]]*/, "", part)
+        }
+
+        in_device && /^Type:/ {
+            type = $0
+            sub(/^Type:[[:space:]]*/, "", type)
+        }
+
+        in_device && /^Speed:/ {
+            speed = $0
+            sub(/^Speed:[[:space:]]*/, "", speed)
+
+            if (size != "No Module Installed" && size != "") {
+
+                printf "%-20s : %s\n", "Slot", slot
+                printf "%-20s : %s\n", "Manufacturer", manufacturer
+                printf "%-20s : %s\n", "Part Number", part
+                printf "%-20s : %s\n", "Type", type
+                printf "%-20s : %s\n", "Capacity", size
+                printf "%-20s : %s\n", "Speed", speed
+                printf "\n"
+            }
+
+            in_device = 0
+        }
+        '
+
+    else
+
+        field "Status" "Run with sudo for RAM module details"
+
+    fi
+
+else
+
+    field "Status" "dmidecode not installed"
+
+fi
+
+# ============================================================
+# OUTPUT: MOTHERBOARD
+# ============================================================
+
+section "MOTHERBOARD"
+
+field "Manufacturer"  "$(get_file "$DMI/board_vendor")"
+field "Model"         "$(get_file "$DMI/board_name")"
+field "Version"       "$(get_file "$DMI/board_version")"
+field "Serial Number" "$(get_file "$DMI/board_serial")"
+field "Asset Tag"     "$(get_file "$DMI/board_asset_tag")"
+
+# ============================================================
+# OUTPUT: BIOS
+# ============================================================
+
+section "BIOS"
+
+field "Vendor"       "$(get_file "$DMI/bios_vendor")"
+field "Version"      "$(get_file "$DMI/bios_version")"
+field "Release Date" "$(get_file "$DMI/bios_date")"
+field "Release"      "$(get_file "$DMI/bios_release")"
+
+printf '\n'
